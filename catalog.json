@@ -1,0 +1,67 @@
+{
+  "source": "https://github.com/CommonPaper",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "templates": [
+    {
+      "name": "Mutual NDA",
+      "description": "Common Paper standard Mutual Non-Disclosure Agreement (standard terms).",
+      "filename": "Mutual-NDA.md"
+    },
+    {
+      "name": "Mutual NDA Cover Page",
+      "description": "Cover page template for the Common Paper Mutual NDA capturing party details and key deal terms; incorporates the standard terms by reference.",
+      "filename": "Mutual-NDA-coverpage.md"
+    },
+    {
+      "name": "Cloud Service Agreement",
+      "description": "Common Paper standard Cloud Service Agreement (CSA) for vendors offering cloud-based services.",
+      "filename": "CSA.md"
+    },
+    {
+      "name": "Design Partner Agreement",
+      "description": "Common Paper standard Design Partner Agreement for early-stage product development collaborations between a vendor and a design partner.",
+      "filename": "Design-Partner-Agreement.md"
+    },
+    {
+      "name": "Service Level Agreement",
+      "description": "Common Paper standard Service Level Agreement covering uptime commitments, support response times, and service credits.",
+      "filename": "SLA.md"
+    },
+    {
+      "name": "Professional Services Agreement",
+      "description": "Common Paper standard Professional Services Agreement for consulting, implementation, and other professional services engagements.",
+      "filename": "PSA.md"
+    },
+    {
+      "name": "Data Processing Agreement",
+      "description": "Common Paper standard Data Processing Agreement (DPA) for GDPR- and CCPA-aligned personal data handling between controllers and processors.",
+      "filename": "DPA.md"
+    },
+    {
+      "name": "Software License Agreement",
+      "description": "Common Paper standard Software License Agreement for on-premise or self-hosted software licensing.",
+      "filename": "Software-License-Agreement.md"
+    },
+    {
+      "name": "Partnership Agreement",
+      "description": "Common Paper standard Partnership Agreement for go-to-market, reseller, and channel partnerships.",
+      "filename": "Partnership-Agreement.md"
+    },
+    {
+      "name": "Pilot Agreement",
+      "description": "Common Paper standard Pilot Agreement for time-bound proof-of-concept evaluations of a product or service.",
+      "filename": "Pilot-Agreement.md"
+    },
+    {
+      "name": "Business Associate Agreement",
+      "description": "Common Paper standard Business Associate Agreement (BAA) for HIPAA-covered relationships involving protected health information.",
+      "filename": "BAA.md"
+    },
+    {
+      "name": "AI Addendum",
+      "description": "Common Paper standard AI Addendum to layer onto an existing agreement to address AI-specific obligations and responsibilities.",
+      "filename": "AI-Addendum.md"
+    }
+  ]
+}

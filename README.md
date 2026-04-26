@@ -1,2 +1,2 @@
 # eddonner-prelegal
-Lesson - to create common legal documents
+Learning - a platform to create common legal documents

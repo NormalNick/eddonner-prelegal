@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.nda-document {
+  color: #18181b;
+  font-family: "Times New Roman", Times, Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.nda-document h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 1rem;
+}
+
+.nda-document h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin: 1.5rem 0 1rem;
+}
+
+.nda-document h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.nda-document p {
+  margin: 0.5rem 0;
+}
+
+.nda-document ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.nda-document ol > li {
+  margin: 0.75rem 0;
+}
+
+.nda-document ul {
+  list-style: none;
+  padding-left: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.nda-document ul > li {
+  margin: 0.25rem 0;
+}
+
+.nda-document ul li input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.nda-document a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.nda-document hr {
+  border: none;
+  border-top: 1px solid #d4d4d8;
+  margin: 2rem 0;
+  page-break-after: always;
+  break-after: page;
+}
+
+.nda-document table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.nda-document th,
+.nda-document td {
+  border: 1px solid #a1a1aa;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  min-height: 2rem;
+}
+
+.nda-document th {
+  background: #f4f4f5;
+  font-weight: 700;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.75in;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only-document {
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .nda-document {
+    color: #000000;
+    font-size: 11pt;
+  }
+
+  .nda-document a {
+    color: #000000;
+    text-decoration: none;
+  }
+}

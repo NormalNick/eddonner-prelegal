@@ -20,11 +20,27 @@ function fieldOrPlaceholder(value: string): string {
   return value.trim() || PLACEHOLDER;
 }
 
+function pluralYears(n: number): string {
+  return `${n} year${n === 1 ? "" : "s"}`;
+}
+
+function escapeMarkdownBlock(text: string): string {
+  return text
+    .replace(/`/g, "\\`")
+    .split("\n")
+    .map((line) => {
+      if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+        return line.replace(/^(\s*)/, "$1\\");
+      }
+      return line.replace(/^(\s*)([#|>])/, "$1\\$2");
+    })
+    .join("\n");
+}
+
 function ndaTermLines(data: NdaFormData): string {
-  const yearsText = `${data.ndaTermYears} year${data.ndaTermYears === 1 ? "" : "s"}`;
   if (data.ndaTermKind === "years") {
     return [
-      `- [x]     Expires ${yearsText} from Effective Date.`,
+      `- [x]     Expires ${pluralYears(data.ndaTermYears)} from Effective Date.`,
       "- [ ]     Continues until terminated in accordance with the terms of the MNDA.",
     ].join("\n");
   }
@@ -35,10 +51,9 @@ function ndaTermLines(data: NdaFormData): string {
 }
 
 function confidentialityLines(data: NdaFormData): string {
-  const yearsText = `${data.confidentialityYears} year${data.confidentialityYears === 1 ? "" : "s"}`;
   if (data.confidentialityKind === "years") {
     return [
-      `- [x]     ${yearsText} from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws.`,
+      `- [x]     ${pluralYears(data.confidentialityYears)} from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws.`,
       "- [ ]     In perpetuity.",
     ].join("\n");
   }
@@ -49,7 +64,9 @@ function confidentialityLines(data: NdaFormData): string {
 }
 
 function partyCell(party: NdaParty, key: keyof NdaParty): string {
-  return fieldOrPlaceholder(party[key]).replace(/\n/g, " ");
+  return fieldOrPlaceholder(party[key])
+    .replace(/\n/g, " ")
+    .replace(/\|/g, "\\|");
 }
 
 function signatureTable(data: NdaFormData): string {
@@ -71,11 +88,13 @@ function signatureTable(data: NdaFormData): string {
 }
 
 export function buildCoverPage(data: NdaFormData): string {
-  const purpose = fieldOrPlaceholder(data.purpose);
+  const purpose = escapeMarkdownBlock(fieldOrPlaceholder(data.purpose));
   const effectiveDate = formatEffectiveDate(data.effectiveDate);
   const governingLaw = fieldOrPlaceholder(data.governingLawState);
   const jurisdiction = fieldOrPlaceholder(data.jurisdiction);
-  const modifications = data.modifications.trim() || "_None._";
+  const modifications = data.modifications.trim()
+    ? escapeMarkdownBlock(data.modifications.trim())
+    : "_None._";
 
   return `# Mutual Non-Disclosure Agreement
 

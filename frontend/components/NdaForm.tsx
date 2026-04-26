@@ -10,6 +10,8 @@ interface NdaFormProps {
 const labelClass = "block text-sm font-medium text-zinc-700 mb-1";
 const inputClass =
   "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500";
+const yearsInputClass =
+  "w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-400";
 const sectionClass = "border-b border-zinc-200 pb-6 mb-6 last:border-b-0 last:mb-0";
 const sectionHeadingClass = "text-base font-semibold text-zinc-900 mb-3";
 
@@ -72,7 +74,7 @@ export function NdaForm({ data, onChange }: NdaFormProps) {
                 <input
                   type="number"
                   min={1}
-                  className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
+                  className={yearsInputClass}
                   value={data.ndaTermYears}
                   onChange={(e) =>
                     update("ndaTermYears", Math.max(1, Number(e.target.value) || 1))
@@ -106,7 +108,7 @@ export function NdaForm({ data, onChange }: NdaFormProps) {
                 <input
                   type="number"
                   min={1}
-                  className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
+                  className={yearsInputClass}
                   value={data.confidentialityYears}
                   onChange={(e) =>
                     update(

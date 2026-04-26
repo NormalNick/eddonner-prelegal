@@ -21,6 +21,16 @@ npm run dev
 
 Then open <http://localhost:3000>.
 
+## Tests
+
+```bash
+npm test
+```
+
+Vitest covers the lib code: cover-page rendering, markdown escaping for
+user input, year pluralization, date formatting, fidelity of the bundled
+Standard Terms against the Common Paper source, and document composition.
+
 ## Layout
 
 ```

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AuthHeader } from "@/components/AuthHeader";
 import { NdaForm } from "@/components/NdaForm";
 import { NdaPreview } from "@/components/NdaPreview";
 import { buildFullNda } from "@/lib/build-nda";
@@ -23,13 +24,16 @@ export default function Home() {
               PDF when ready.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-700"
-          >
-            Download PDF
-          </button>
+          <div className="flex items-center gap-4">
+            <AuthHeader />
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-700"
+            >
+              Download PDF
+            </button>
+          </div>
         </div>
       </header>
 

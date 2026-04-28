@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/out
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+**/dev.db
+**/test.db
+.git
+.gitignore
+.env
+.env.*
+*.md
+!frontend/AGENTS.md
+backend/tests

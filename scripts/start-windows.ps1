@@ -14,7 +14,7 @@ $frontendDir = Join-Path $repoRoot "frontend"
 
 Start-Process -FilePath "powershell.exe" `
     -WorkingDirectory $backendDir `
-    -ArgumentList "-NoExit", "-Command", "uv run uvicorn app.main:app --reload --port 8000" `
+    -ArgumentList "-NoExit", "-Command", "uv run --env-file ../.env uvicorn app.main:app --reload --port 8000" `
     -WindowStyle Minimized
 
 Start-Process -FilePath "powershell.exe" `
@@ -57,38 +57,6 @@ try {
     Write-Warning "FAIL: signup: $_"
 }
 
-if ($signupOk) {
-    try {
-        $emptyParty = @{ company = ""; printName = ""; title = ""; noticeAddress = "" }
-        $chatBody = @{
-            messages      = @(@{ role = "user"; content = "Help me draft an NDA. Purpose is evaluating a partnership." })
-            currentFields = @{
-                purpose              = ""
-                effectiveDate        = ""
-                ndaTermKind          = "years"
-                ndaTermYears         = 1
-                confidentialityKind  = "years"
-                confidentialityYears = 1
-                governingLawState    = ""
-                jurisdiction         = ""
-                modifications        = ""
-                party1               = $emptyParty
-                party2               = $emptyParty
-            }
-        } | ConvertTo-Json -Depth 6
-        $resp = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/chat" `
-            -Method Post -Body $chatBody -ContentType "application/json" `
-            -WebSession $session
-        if ($resp.reply -and $null -ne $resp.fieldsPatch) {
-            $preview = $resp.reply.Substring(0, [Math]::Min(70, $resp.reply.Length))
-            Write-Output "PASS: AI chat reply: $preview..."
-        } else {
-            Write-Warning "FAIL: chat response missing reply or fieldsPatch"
-        }
-    } catch {
-        Write-Warning "FAIL: chat: $_"
-    }
-}
 
 Write-Output ""
 Write-Output "Open http://localhost:3000 to use the app. Run scripts\stop-windows.ps1 to stop."

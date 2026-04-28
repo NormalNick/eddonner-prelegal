@@ -1,29 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { api, ApiError, type User } from "@/lib/api";
+import type { User } from "@/lib/api";
 
-export function AuthHeader() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+interface AuthHeaderProps {
+  user: User | null;
+  loading: boolean;
+  onLogout: () => void;
+}
 
-  useEffect(() => {
-    api.me()
-      .then(setUser)
-      .catch((err) => {
-        if (!(err instanceof ApiError && err.status === 401)) {
-          console.error(err);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleLogout = async () => {
-    await api.logout();
-    setUser(null);
-  };
-
+export function AuthHeader({ user, loading, onLogout }: AuthHeaderProps) {
   if (loading) {
     return <div className="text-sm text-brand-gray">…</div>;
   }
@@ -34,7 +20,7 @@ export function AuthHeader() {
         <span className="text-brand-gray">Hi {user.email}</span>
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={onLogout}
           className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50"
         >
           Log out

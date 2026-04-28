@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: prelegal-app
+    container_name: prelegal-app
+    ports:
+      - "8000:8000"
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+    restart: unless-stopped

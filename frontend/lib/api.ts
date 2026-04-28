@@ -3,9 +3,37 @@
  * signed-session cookie flows on every call.
  */
 
+import type { NdaFormData, NdaParty } from "./nda-types";
+
 export interface User {
   id: number;
   email: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export type NdaPartyPatch = Partial<NdaParty>;
+
+export interface NdaFieldsPatch {
+  purpose?: string | null;
+  effectiveDate?: string | null;
+  ndaTermKind?: "years" | "untilTerminated" | null;
+  ndaTermYears?: number | null;
+  confidentialityKind?: "years" | "perpetuity" | null;
+  confidentialityYears?: number | null;
+  governingLawState?: string | null;
+  jurisdiction?: string | null;
+  modifications?: string | null;
+  party1?: NdaPartyPatch | null;
+  party2?: NdaPartyPatch | null;
+}
+
+export interface ChatResponse {
+  reply: string;
+  fieldsPatch: NdaFieldsPatch;
 }
 
 export class ApiError extends Error {
@@ -42,4 +70,9 @@ export const api = {
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
+  chat: (messages: ChatMessage[], currentFields: NdaFormData) =>
+    request<ChatResponse>("/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages, currentFields }),
+    }),
 };

@@ -15,6 +15,7 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Request, status
 from litellm import completion
+from litellm.exceptions import APIError, AuthenticationError, RateLimitError
 from pydantic import BaseModel, create_model
 
 from ..auth.sessions import read_session
@@ -119,13 +120,34 @@ def chat(req: ChatRequest, request: Request) -> ChatResponse:
     fields = config.fields_type.model_validate(req.currentFields)
     response_model = _response_model_for(config.slug, config.patch_type)
 
-    response = completion(
-        model=MODEL,
-        messages=_build_messages(config, fields, req.messages),
-        response_format=response_model,
-        reasoning_effort="low",
-        extra_body=EXTRA_BODY,
-    )
+    try:
+        response = completion(
+            model=MODEL,
+            messages=_build_messages(config, fields, req.messages),
+            response_format=response_model,
+            reasoning_effort="low",
+            extra_body=EXTRA_BODY,
+        )
+    except AuthenticationError as exc:
+        # Almost always an invalid/expired OPENROUTER_API_KEY in .env.
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "The AI provider rejected our credentials. "
+                "Check OPENROUTER_API_KEY in .env."
+            ),
+        ) from exc
+    except RateLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="The AI provider is rate-limiting requests. Try again in a moment.",
+        ) from exc
+    except APIError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"The AI provider returned an error: {exc!s}",
+        ) from exc
+
     raw = response.choices[0].message.content
     parsed = response_model.model_validate_json(raw)
     return ChatResponse(**parsed.model_dump())

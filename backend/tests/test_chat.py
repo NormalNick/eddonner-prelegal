@@ -68,6 +68,26 @@ def test_chat_requires_auth(client, monkeypatch):
     assert res.status_code == 401
 
 
+def test_chat_surfaces_provider_auth_failure_as_502(client, monkeypatch):
+    from litellm.exceptions import AuthenticationError
+
+    def boom(**kwargs):
+        raise AuthenticationError(
+            message="User not found.",
+            llm_provider="openrouter",
+            model="openrouter/openai/gpt-oss-120b",
+        )
+
+    import app.chat.router as chat_router_module
+
+    monkeypatch.setattr(chat_router_module, "completion", boom)
+    _signup(client)
+
+    res = client.post("/api/chat", json=_nda_request_body())
+    assert res.status_code == 502
+    assert "OPENROUTER_API_KEY" in res.json()["detail"]
+
+
 def test_chat_returns_reply_and_patch(client, monkeypatch):
     captured = _stub_completion(monkeypatch)
     _signup(client)

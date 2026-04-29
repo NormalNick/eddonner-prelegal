@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildCoverPage } from "./coverpage-template";
-import type { NdaFormData } from "./nda-types";
+import { buildCoverPage } from "./coverpage";
+import type { NdaFormData } from "./types";
 
 function fixture(overrides: Partial<NdaFormData> = {}): NdaFormData {
   return {

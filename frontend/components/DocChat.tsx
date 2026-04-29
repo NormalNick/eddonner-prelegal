@@ -3,15 +3,23 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatMessage } from "@/lib/api";
 
-interface NdaChatProps {
+interface DocChatProps {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
+  inputPlaceholder: string;
   onSend: (text: string) => void;
   onReset: () => void;
 }
 
-export function NdaChat({ messages, loading, error, onSend, onReset }: NdaChatProps) {
+export function DocChat({
+  messages,
+  loading,
+  error,
+  inputPlaceholder,
+  onSend,
+  onReset,
+}: DocChatProps) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +72,7 @@ export function NdaChat({ messages, loading, error, onSend, onReset }: NdaChatPr
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Tell the assistant about your NDA…"
+          placeholder={inputPlaceholder}
           className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           disabled={loading}
           autoFocus

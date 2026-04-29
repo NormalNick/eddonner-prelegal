@@ -1,40 +1,12 @@
-import type { NdaFormData, NdaParty } from "./nda-types";
-
-const PLACEHOLDER = "_____";
-
-function formatEffectiveDate(isoDate: string): string {
-  if (!isoDate) return PLACEHOLDER;
-  const parts = isoDate.split("-").map(Number);
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return isoDate;
-  const [year, month, day] = parts;
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-function fieldOrPlaceholder(value: string): string {
-  return value.trim() || PLACEHOLDER;
-}
+import {
+  escapeMarkdownBlock,
+  fieldOrPlaceholder,
+  formatEffectiveDate,
+} from "../_shared";
+import type { NdaFormData, NdaParty } from "./types";
 
 function pluralYears(n: number): string {
   return `${n} year${n === 1 ? "" : "s"}`;
-}
-
-function escapeMarkdownBlock(text: string): string {
-  return text
-    .replace(/`/g, "\\`")
-    .split("\n")
-    .map((line) => {
-      if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-        return line.replace(/^(\s*)/, "$1\\");
-      }
-      return line.replace(/^(\s*)([#|>])/, "$1\\$2");
-    })
-    .join("\n");
 }
 
 function ndaTermLines(data: NdaFormData): string {

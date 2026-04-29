@@ -1,62 +1,29 @@
-"""POST /api/chat: drive Mutual NDA drafting via a freeform AI conversation.
+"""POST /api/chat: drive multi-template document drafting via AI conversation.
 
-A single structured-output call returns the assistant's reply plus a sparse
-patch of NDA fields. The frontend deep-merges the patch into its form state.
+Each request carries a `templateSlug`. The router dispatches to the
+template's Pydantic schema + system prompt, calls LiteLLM with a
+structured-output schema specific to that template, and returns a
+deep-mergeable sparse `fieldsPatch`.
+
+Unsupported slugs (or in-chat user requests for unsupported templates)
+short-circuit to `mode: "suggest"` with the nearest supported template.
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Request, status
 from litellm import completion
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, create_model
 
 from ..auth.sessions import read_session
+from .templates import registry
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 MODEL = "openrouter/openai/gpt-oss-120b"
 EXTRA_BODY = {"provider": {"order": ["cerebras"]}}
-
-
-class NdaPartyPatch(BaseModel):
-    company: str | None = None
-    printName: str | None = None
-    title: str | None = None
-    noticeAddress: str | None = None
-
-
-class NdaFields(BaseModel):
-    """Full NDA form snapshot the frontend sends with each turn."""
-
-    purpose: str = ""
-    effectiveDate: str = ""
-    ndaTermKind: Literal["years", "untilTerminated"] = "years"
-    ndaTermYears: int = 1
-    confidentialityKind: Literal["years", "perpetuity"] = "years"
-    confidentialityYears: int = 1
-    governingLawState: str = ""
-    jurisdiction: str = ""
-    modifications: str = ""
-    party1: NdaPartyPatch = Field(default_factory=NdaPartyPatch)
-    party2: NdaPartyPatch = Field(default_factory=NdaPartyPatch)
-
-
-class NdaFieldsPatch(BaseModel):
-    """Sparse update returned by the model. Null fields are left untouched."""
-
-    purpose: str | None = None
-    effectiveDate: str | None = None
-    ndaTermKind: Literal["years", "untilTerminated"] | None = None
-    ndaTermYears: int | None = None
-    confidentialityKind: Literal["years", "perpetuity"] | None = None
-    confidentialityYears: int | None = None
-    governingLawState: str | None = None
-    jurisdiction: str | None = None
-    modifications: str | None = None
-    party1: NdaPartyPatch | None = None
-    party2: NdaPartyPatch | None = None
 
 
 class ChatMessage(BaseModel):
@@ -65,48 +32,79 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
+    templateSlug: str
     messages: list[ChatMessage]
-    currentFields: NdaFields
+    currentFields: dict[str, Any]
 
 
 class ChatResponse(BaseModel):
+    mode: Literal["draft", "suggest"]
     reply: str
-    fieldsPatch: NdaFieldsPatch
+    fieldsPatch: dict[str, Any] | None = None
+    suggestedSlug: str | None = None
 
 
-SYSTEM_PROMPT = """You are a friendly assistant helping a user draft a Common Paper Mutual Non-Disclosure Agreement (MNDA) by chat.
-
-Your job each turn:
-1. Read the current field values and the conversation so far.
-2. Reply in plain conversational English (2-4 sentences). Acknowledge anything you just captured, then ask the next question. Ask about ONE topic at a time.
-3. Emit a `fieldsPatch` containing ONLY the fields the latest user message gave you new information for. Leave every other field as null. Never overwrite an existing value with null.
-
-Fields to collect (collect roughly in this order, but adapt to what the user volunteers):
-- purpose: one sentence describing why the parties are sharing confidential info.
-- effectiveDate: ISO format YYYY-MM-DD. If the user says "today" use the current date from context.
-- ndaTermKind ("years" or "untilTerminated") and, if "years", ndaTermYears (integer >= 1). Default suggestion: 1 year.
-- confidentialityKind ("years" or "perpetuity") and, if "years", confidentialityYears (integer >= 1). Default suggestion: 1 year.
-- governingLawState: a US state name, e.g. "Delaware".
-- jurisdiction: city/county and state, e.g. "New Castle County, Delaware".
-- modifications: any tweaks to the standard terms. If the user has none, set this to "" (empty string) so it renders as "None".
-- party1 and party2: each has company, printName (signatory full name), title, noticeAddress (email or postal).
-
-When all required fields are filled, congratulate the user and tell them they can review the preview on the right and click "Download PDF" to print or save.
-
-Keep replies short. Do not lecture about legal matters. Do not invent values the user did not give you.
-"""
-
-
-def _build_messages(req: ChatRequest) -> list[dict]:
+def _build_messages(
+    config: registry.TemplateConfig,
+    fields: BaseModel,
+    history: list[ChatMessage],
+) -> list[dict[str, str]]:
     system = (
-        SYSTEM_PROMPT
+        (config.system_prompt or "")
         + "\n\nCurrent field values (JSON):\n"
-        + req.currentFields.model_dump_json(indent=2)
+        + fields.model_dump_json(indent=2)
     )
-    msgs: list[dict] = [{"role": "system", "content": system}]
-    for m in req.messages:
+    msgs: list[dict[str, str]] = [{"role": "system", "content": system}]
+    for m in history:
         msgs.append({"role": m.role, "content": m.content})
     return msgs
+
+
+_RESPONSE_MODELS: dict[str, type[BaseModel]] = {}
+
+
+def _response_model_for(slug: str, patch_type: type[BaseModel]) -> type[BaseModel]:
+    """One Pydantic response model per slug, built lazily and cached.
+    `patch_type` is a real runtime type here (not a forward-reference
+    string), so `create_model` resolves the field cleanly even with
+    `from __future__ import annotations` on the module."""
+    cached = _RESPONSE_MODELS.get(slug)
+    if cached is not None:
+        return cached
+    model = create_model(
+        f"ChatResponse_{slug}",
+        mode=(Literal["draft", "suggest"], ...),
+        reply=(str, ...),
+        fieldsPatch=(patch_type | None, None),
+        suggestedSlug=(str | None, None),
+    )
+    _RESPONSE_MODELS[slug] = model
+    return model
+
+
+def _suggest_response(slug: str) -> ChatResponse:
+    config = registry.get(slug)
+    if config is None:
+        return ChatResponse(
+            mode="suggest",
+            reply=(
+                f"I don't recognize the template '{slug}'. "
+                "The Mutual NDA is the closest available template."
+            ),
+            suggestedSlug="mutual-nda",
+        )
+    nearest = registry.get(config.nearest_slug or "mutual-nda")
+    nearest_name = nearest.display_name if nearest else "Mutual NDA"
+    nearest_slug = nearest.slug if nearest else "mutual-nda"
+    return ChatResponse(
+        mode="suggest",
+        reply=(
+            f"AI drafting for the {config.display_name} isn't available yet. "
+            f"The closest template I can draft right now is the {nearest_name}. "
+            "Would you like to start there?"
+        ),
+        suggestedSlug=nearest_slug,
+    )
 
 
 @router.post("", response_model=ChatResponse)
@@ -114,12 +112,20 @@ def chat(req: ChatRequest, request: Request) -> ChatResponse:
     if read_session(request) is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
+    config = registry.get(req.templateSlug)
+    if config is None or not config.supported:
+        return _suggest_response(req.templateSlug)
+
+    fields = config.fields_type.model_validate(req.currentFields)
+    response_model = _response_model_for(config.slug, config.patch_type)
+
     response = completion(
         model=MODEL,
-        messages=_build_messages(req),
-        response_format=ChatResponse,
+        messages=_build_messages(config, fields, req.messages),
+        response_format=response_model,
         reasoning_effort="low",
         extra_body=EXTRA_BODY,
     )
     raw = response.choices[0].message.content
-    return ChatResponse.model_validate_json(raw)
+    parsed = response_model.model_validate_json(raw)
+    return ChatResponse(**parsed.model_dump())

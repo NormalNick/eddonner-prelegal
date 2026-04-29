@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildFullNda } from "./build-nda";
-import { createDefaultFormData } from "./nda-defaults";
+import { buildFullNda } from "./builder";
+import { createDefaultFormData } from "./defaults";
 
 describe("buildFullNda", () => {
   it("includes the cover page heading", () => {

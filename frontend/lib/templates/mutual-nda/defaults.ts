@@ -1,4 +1,4 @@
-import type { NdaFormData, NdaParty } from "./nda-types";
+import type { NdaFormData, NdaParty } from "./types";
 
 const emptyParty: NdaParty = {
   company: "",

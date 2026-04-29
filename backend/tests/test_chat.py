@@ -1,5 +1,5 @@
-"""Chat endpoint tests. The litellm.completion call is monkeypatched so
-tests never hit the network or require an API key."""
+"""Mutual NDA chat endpoint tests. The litellm.completion call is
+monkeypatched so tests never hit the network or require an API key."""
 
 from __future__ import annotations
 
@@ -13,8 +13,10 @@ def _fake_completion_response(content: str):
 
 
 CANNED_REPLY = (
-    '{"reply": "Got it, the purpose is set. Who are the two parties?",'
-    ' "fieldsPatch": {"purpose": "Evaluating a partnership."}}'
+    '{"mode": "draft",'
+    ' "reply": "Got it, the purpose is set. Who are the two parties?",'
+    ' "fieldsPatch": {"purpose": "Evaluating a partnership."},'
+    ' "suggestedSlug": null}'
 )
 
 
@@ -31,32 +33,27 @@ def _stub_completion(monkeypatch, content: str = CANNED_REPLY):
     return captured
 
 
-def _empty_request_body() -> dict:
+def _empty_nda_fields() -> dict:
     return {
+        "purpose": "",
+        "effectiveDate": "",
+        "ndaTermKind": "years",
+        "ndaTermYears": 1,
+        "confidentialityKind": "years",
+        "confidentialityYears": 1,
+        "governingLawState": "",
+        "jurisdiction": "",
+        "modifications": "",
+        "party1": {"company": "", "printName": "", "title": "", "noticeAddress": ""},
+        "party2": {"company": "", "printName": "", "title": "", "noticeAddress": ""},
+    }
+
+
+def _nda_request_body() -> dict:
+    return {
+        "templateSlug": "mutual-nda",
         "messages": [{"role": "user", "content": "Help me draft an NDA."}],
-        "currentFields": {
-            "purpose": "",
-            "effectiveDate": "",
-            "ndaTermKind": "years",
-            "ndaTermYears": 1,
-            "confidentialityKind": "years",
-            "confidentialityYears": 1,
-            "governingLawState": "",
-            "jurisdiction": "",
-            "modifications": "",
-            "party1": {
-                "company": "",
-                "printName": "",
-                "title": "",
-                "noticeAddress": "",
-            },
-            "party2": {
-                "company": "",
-                "printName": "",
-                "title": "",
-                "noticeAddress": "",
-            },
-        },
+        "currentFields": _empty_nda_fields(),
     }
 
 
@@ -67,7 +64,7 @@ def _signup(client, email: str = "alice@example.com", password: str = "passw0rd!
 
 def test_chat_requires_auth(client, monkeypatch):
     _stub_completion(monkeypatch)
-    res = client.post("/api/chat", json=_empty_request_body())
+    res = client.post("/api/chat", json=_nda_request_body())
     assert res.status_code == 401
 
 
@@ -75,9 +72,11 @@ def test_chat_returns_reply_and_patch(client, monkeypatch):
     captured = _stub_completion(monkeypatch)
     _signup(client)
 
-    res = client.post("/api/chat", json=_empty_request_body())
+    res = client.post("/api/chat", json=_nda_request_body())
     assert res.status_code == 200, res.text
     body = res.json()
+    assert body["mode"] == "draft"
+    assert body["suggestedSlug"] is None
     assert body["reply"].startswith("Got it")
     assert body["fieldsPatch"]["purpose"] == "Evaluating a partnership."
     assert body["fieldsPatch"]["effectiveDate"] is None
@@ -86,4 +85,5 @@ def test_chat_returns_reply_and_patch(client, monkeypatch):
     assert kwargs["model"] == "openrouter/openai/gpt-oss-120b"
     assert kwargs["extra_body"] == {"provider": {"order": ["cerebras"]}}
     assert kwargs["messages"][0]["role"] == "system"
+    assert "Mutual Non-Disclosure Agreement" in kwargs["messages"][0]["content"]
     assert kwargs["messages"][-1]["content"] == "Help me draft an NDA."

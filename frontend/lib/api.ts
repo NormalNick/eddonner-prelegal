@@ -3,8 +3,6 @@
  * signed-session cookie flows on every call.
  */
 
-import type { NdaFormData, NdaParty } from "./nda-types";
-
 export interface User {
   id: number;
   email: string;
@@ -15,25 +13,13 @@ export interface ChatMessage {
   content: string;
 }
 
-export type NdaPartyPatch = Partial<NdaParty>;
-
-export interface NdaFieldsPatch {
-  purpose?: string | null;
-  effectiveDate?: string | null;
-  ndaTermKind?: "years" | "untilTerminated" | null;
-  ndaTermYears?: number | null;
-  confidentialityKind?: "years" | "perpetuity" | null;
-  confidentialityYears?: number | null;
-  governingLawState?: string | null;
-  jurisdiction?: string | null;
-  modifications?: string | null;
-  party1?: NdaPartyPatch | null;
-  party2?: NdaPartyPatch | null;
-}
+export type ChatMode = "draft" | "suggest";
 
 export interface ChatResponse {
+  mode: ChatMode;
   reply: string;
-  fieldsPatch: NdaFieldsPatch;
+  fieldsPatch: Record<string, unknown> | null;
+  suggestedSlug: string | null;
 }
 
 export class ApiError extends Error {
@@ -70,9 +56,13 @@ export const api = {
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
-  chat: (messages: ChatMessage[], currentFields: NdaFormData) =>
+  chat: (
+    templateSlug: string,
+    messages: ChatMessage[],
+    currentFields: Record<string, unknown>,
+  ) =>
     request<ChatResponse>("/chat", {
       method: "POST",
-      body: JSON.stringify({ messages, currentFields }),
+      body: JSON.stringify({ templateSlug, messages, currentFields }),
     }),
 };

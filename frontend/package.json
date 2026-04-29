@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate-terms": "node scripts/generate-terms.mjs",
+    "predev": "npm run generate-terms",
+    "prebuild": "npm run generate-terms",
+    "pretest": "npm run generate-terms",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

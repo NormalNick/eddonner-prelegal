@@ -1,1 +1,1 @@
-"""AI chat for Mutual NDA drafting."""
+"""AI chat for multi-template legal-document drafting."""

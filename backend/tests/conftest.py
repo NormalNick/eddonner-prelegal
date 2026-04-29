@@ -23,6 +23,8 @@ def client(tmp_path, monkeypatch) -> Iterator[TestClient]:
     importlib.reload(sessions_module)
     from app.auth import router as auth_router_module
     importlib.reload(auth_router_module)
+    from app.documents import router as documents_router_module
+    importlib.reload(documents_router_module)
     from app import main as main_module
     importlib.reload(main_module)
 

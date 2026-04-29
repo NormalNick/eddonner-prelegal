@@ -1,45 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AuthHeader } from "@/components/AuthHeader";
+import { AppHeader } from "@/components/AppHeader";
+import { Footer } from "@/components/Footer";
+import { Hero } from "@/components/Hero";
 import { TemplatePicker } from "@/components/TemplatePicker";
-import { api, ApiError, type User } from "@/lib/api";
+import { useAuth } from "@/lib/useAuth";
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-    api.me()
-      .then(setUser)
-      .catch((err) => {
-        if (!(err instanceof ApiError && err.status === 401)) console.error(err);
-      })
-      .finally(() => setAuthLoading(false));
-  }, []);
-
-  const handleLogout = async () => {
-    await api.logout();
-    setUser(null);
-  };
+  const { user, loading, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-zinc-900">Prelegal</h1>
-            <p className="text-sm text-zinc-500">
-              Pick a template to start drafting with the AI assistant.
-            </p>
-          </div>
-          <AuthHeader user={user} loading={authLoading} onLogout={handleLogout} />
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-zinc-50">
+      <AppHeader user={user} loading={loading} onLogout={logout} />
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        <TemplatePicker />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
+        {loading ? (
+          <div className="text-sm text-brand-gray">Loading…</div>
+        ) : user ? (
+          <SignedInHome />
+        ) : (
+          <Hero />
+        )}
       </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+function SignedInHome() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold text-brand-navy">
+          Start a new draft
+        </h1>
+        <p className="mt-1 text-sm text-brand-gray">
+          Pick a template to begin. The assistant will guide you through
+          filling in the cover page.
+        </p>
+      </div>
+      <TemplatePicker />
     </div>
   );
 }

@@ -98,7 +98,17 @@ These are exposed as Tailwind v4 tokens in `frontend/app/globals.css` (`text-bra
 - Standard-terms loading: `frontend/scripts/generate-terms.mjs` reads `templates/*.md` at build time, strips Common Paper's `<span class="*_link">` tags into bold field markers, normalizes curly quotes, and emits `lib/templates/{slug}/standard-terms.ts`. Wired to `predev`/`prebuild`/`pretest`. Output is gitignored — the `.md` files are the single source of truth.
 - Templates fully supported by AI drafting: **Mutual NDA**, **AI Addendum**. The other 10 (`csa`, `design-partner-agreement`, `sla`, `psa`, `dpa`, `software-license-agreement`, `partnership-agreement`, `pilot-agreement`, `baa`) appear on the picker with a "Coming soon" badge and route to a notice page that links to the nearest supported template. Adding a new supported template = one folder per side + one registry entry per side + one entry in `generate-terms.mjs` + one test.
 
+**Built (PL-7):**
+- Document persistence. New `documents` table (`id, user_id FK CASCADE, template_slug, title, fields_json, messages_json, created_at, updated_at`) created in `app/db.py`'s SCHEMA. Wiped on container start by the existing `WIPE_DB=1` flag, so no migration logic.
+- Auth-gated CRUD endpoints under `/api/documents`: `GET` (list summaries, newest first), `POST` (create), `GET /{id}`, `PUT /{id}`, `DELETE /{id}`. Owner enforcement is structural — every query keys on both `id` and `user_id`, so cross-user reads/writes return 404 (no IDs leak). Lives in `app/documents/{router,schemas,storage}.py`.
+- Auto-save UX. The draft page POSTs on the first chat turn (capturing the new id into `?doc={id}`), then PUTs on every subsequent turn. A promise-chain ref serializes saves so rapid turns don't double-create. Loading `/draft?t={slug}&doc={id}` rehydrates the form data + chat history; mismatched slugs surface a "use My documents" hint instead of clobbering state.
+- Per-template `summarize(data)` lives next to the other helpers (`mutual-nda/summarize.ts`, `ai-addendum/summarize.ts`) and produces the saved-doc title (e.g. `NDA: Acme ↔ Globex`, `AI Addendum: Customer ↔ Provider`, falling back to template default). Adding a new supported template now also requires a `summarize.ts`.
+- New `/documents` page lists drafts in a table (title links to `/draft?t=…&doc=…`, delete with optimistic update + rollback on failure).
+- Shared shell: `<AppHeader>` (brand wordmark + "My documents" link + auth controls), `<Footer>` (disclaimer + copyright). Used by `/`, `/documents`, `/draft`, login/signup. The login/signup `AuthForm` was rewrapped in this shell. `lib/useAuth.ts` is the shared session hook.
+- Logged-out `/` shows `<Hero>` (gradient banner + 3-step "How it works" + sign-up CTA). Logged-in `/` keeps the picker.
+- Disclaimer: `<Disclaimer>` is a yellow callout above the document preview (`showInPrint` keeps it in PDF output). The full text lives in `lib/disclaimer.ts` (single source of truth for both the banner and the footer).
+- Tests: `backend/tests/test_documents.py` covers auth, CRUD, 404, and cross-user isolation. Frontend `summarize.test.ts` per supported template.
+
 **Not yet built:**
-- Document persistence (no `documents` table, no save/load endpoints).
 - Full AI drafting for the 10 "Coming soon" templates (CSA, DPA, BAA, etc.) — they currently show suggest replies only.
 - Production hardening (HTTPS, cookie `Secure` flag toggle, CORS lockdown).

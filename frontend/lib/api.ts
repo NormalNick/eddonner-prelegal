@@ -22,6 +22,26 @@ export interface ChatResponse {
   suggestedSlug: string | null;
 }
 
+export interface DocumentSummary {
+  id: number;
+  templateSlug: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentDetail extends DocumentSummary {
+  fields: Record<string, unknown>;
+  messages: ChatMessage[];
+}
+
+export interface DocumentInput {
+  templateSlug?: string;
+  title: string;
+  fields: Record<string, unknown>;
+  messages: ChatMessage[];
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -65,4 +85,24 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ templateSlug, messages, currentFields }),
     }),
+  documents: {
+    list: () => request<DocumentSummary[]>("/documents"),
+    get: (id: number) => request<DocumentDetail>(`/documents/${id}`),
+    create: (input: DocumentInput & { templateSlug: string }) =>
+      request<DocumentDetail>("/documents", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    update: (id: number, input: DocumentInput) =>
+      request<DocumentDetail>(`/documents/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: input.title,
+          fields: input.fields,
+          messages: input.messages,
+        }),
+      }),
+    remove: (id: number) =>
+      request<void>(`/documents/${id}`, { method: "DELETE" }),
+  },
 };

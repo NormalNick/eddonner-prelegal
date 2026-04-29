@@ -13,6 +13,7 @@
 import { applyPatch as applyAiAddendumPatch } from "./ai-addendum/applyPatch";
 import { buildFullAiAddendum } from "./ai-addendum/builder";
 import { createDefaultAiAddendumData } from "./ai-addendum/defaults";
+import { summarize as summarizeAiAddendum } from "./ai-addendum/summarize";
 import type {
   AiAddendumFieldsPatch,
   AiAddendumFormData,
@@ -20,6 +21,7 @@ import type {
 import { applyPatch as applyNdaPatch } from "./mutual-nda/applyPatch";
 import { buildFullNda } from "./mutual-nda/builder";
 import { createDefaultFormData as createDefaultNdaData } from "./mutual-nda/defaults";
+import { summarize as summarizeNda } from "./mutual-nda/summarize";
 import type { NdaFieldsPatch, NdaFormData } from "./mutual-nda/types";
 
 export type TemplateFormData = Record<string, unknown>;
@@ -36,6 +38,9 @@ export interface SupportedTemplate {
     current: TemplateFormData,
     patch: TemplateFieldsPatch,
   ) => TemplateFormData;
+  /** Short, human-readable label derived from the form data. Used as
+   * the saved-document title; never empty. */
+  summarize: (data: TemplateFormData) => string;
   greeting: string;
   inputPlaceholder: string;
 }
@@ -65,6 +70,7 @@ function makeSupported<T extends object, P extends object>(args: {
   createDefaults: () => T;
   buildDocument: (data: T) => string;
   applyPatch: (current: T, patch: P) => T;
+  summarize: (data: T) => string;
 }): SupportedTemplate {
   return {
     slug: args.slug,
@@ -77,6 +83,7 @@ function makeSupported<T extends object, P extends object>(args: {
     buildDocument: (data) => args.buildDocument(data as unknown as T),
     applyPatch: (current, patch) =>
       args.applyPatch(current as unknown as T, patch as unknown as P) as TemplateFormData,
+    summarize: (data) => args.summarize(data as unknown as T),
   };
 }
 
@@ -92,6 +99,7 @@ const REGISTRY: TemplateConfig[] = [
     createDefaults: createDefaultNdaData,
     buildDocument: buildFullNda,
     applyPatch: applyNdaPatch,
+    summarize: summarizeNda,
   }),
   makeSupported<AiAddendumFormData, AiAddendumFieldsPatch>({
     slug: "ai-addendum",
@@ -104,6 +112,7 @@ const REGISTRY: TemplateConfig[] = [
     createDefaults: createDefaultAiAddendumData,
     buildDocument: buildFullAiAddendum,
     applyPatch: applyAiAddendumPatch,
+    summarize: summarizeAiAddendum,
   }),
   {
     slug: "csa",

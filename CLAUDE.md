@@ -90,7 +90,15 @@ These are exposed as Tailwind v4 tokens in `frontend/app/globals.css` (`text-bra
 **Built (PL-5):**
 - `POST /api/chat` (auth-gated) — single-shot LiteLLM call to `openrouter/openai/gpt-oss-120b` via Cerebras, structured-output schema returning `{reply, fieldsPatch}`. Frontend deep-merges the patch into the NDA form snapshot, skipping null fields.
 
+**Built (PL-6):**
+- Multi-template chat. `/api/chat` request shape is now `{templateSlug, messages, currentFields}`; response is `{mode: "draft" | "suggest", reply, fieldsPatch?, suggestedSlug?}`. Backend dispatches by slug to a per-template Pydantic schema + system prompt; `pydantic.create_model` builds the LLM's structured-output schema per slug (cached). Unsupported slugs short-circuit to a deterministic suggest reply with no LLM call. Each supported template's prompt also instructs the LLM to return `mode: "suggest"` if the user asks for a different document type mid-chat.
+- Per-template backend layout: `backend/app/chat/templates/{slug}/{schema,prompt}.py` + `backend/app/chat/templates/registry.py` (slug-keyed `TemplateConfig` dataclass with `supported`, `nearest_slug`).
+- Per-template frontend layout: `frontend/lib/templates/{slug}/{types,defaults,coverpage,builder,applyPatch}.ts` + `frontend/lib/templates/registry.ts` (`makeSupported<T,P>()` helper concentrates the type casts to the erased `Record<string, unknown>` registry shape).
+- Routing: `/` is the 12-card picker (`<TemplatePicker />`), `/draft?t={slug}` is the chat+preview page (uses `useSearchParams` wrapped in `<Suspense>` for static-export compat). `<DocChat>`/`<DocPreview>` replace `<NdaChat>`/`<NdaPreview>`. The shared markdown CSS class is `.legal-document` (was `.nda-document`).
+- Standard-terms loading: `frontend/scripts/generate-terms.mjs` reads `templates/*.md` at build time, strips Common Paper's `<span class="*_link">` tags into bold field markers, normalizes curly quotes, and emits `lib/templates/{slug}/standard-terms.ts`. Wired to `predev`/`prebuild`/`pretest`. Output is gitignored — the `.md` files are the single source of truth.
+- Templates fully supported by AI drafting: **Mutual NDA**, **AI Addendum**. The other 10 (`csa`, `design-partner-agreement`, `sla`, `psa`, `dpa`, `software-license-agreement`, `partnership-agreement`, `pilot-agreement`, `baa`) appear on the picker with a "Coming soon" badge and route to a notice page that links to the nearest supported template. Adding a new supported template = one folder per side + one registry entry per side + one entry in `generate-terms.mjs` + one test.
+
 **Not yet built:**
 - Document persistence (no `documents` table, no save/load endpoints).
-- Templates beyond Mutual NDA — the other 11 in `catalog.json` are unused.
+- Full AI drafting for the 10 "Coming soon" templates (CSA, DPA, BAA, etc.) — they currently show suggest replies only.
 - Production hardening (HTTPS, cookie `Secure` flag toggle, CORS lockdown).

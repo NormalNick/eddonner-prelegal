@@ -21,3 +21,19 @@ export interface NdaFormData {
   party1: NdaParty;
   party2: NdaParty;
 }
+
+export type NdaPartyPatch = Partial<NdaParty>;
+
+export interface NdaFieldsPatch {
+  purpose?: string | null;
+  effectiveDate?: string | null;
+  ndaTermKind?: NdaTermKind | null;
+  ndaTermYears?: number | null;
+  confidentialityKind?: ConfidentialityTermKind | null;
+  confidentialityYears?: number | null;
+  governingLawState?: string | null;
+  jurisdiction?: string | null;
+  modifications?: string | null;
+  party1?: NdaPartyPatch | null;
+  party2?: NdaPartyPatch | null;
+}
